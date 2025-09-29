@@ -1,3 +1,2 @@
-requests==2.31.0
-beautifulsoup4==4.12.2
-pandas==2.1.4
+# This project currently relies on the Python standard library only.
+# Keep this file to make it easy to introduce third-party packages later.

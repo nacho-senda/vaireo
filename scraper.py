@@ -98,31 +98,104 @@ def parse_sample_json(response_text: str, source: SourceConfig) -> Iterable[Dict
         if not isinstance(raw_entry, dict):
             LOGGER.debug("Skipping non-dict entry in %s: %r", source.name, raw_entry)
             continue
+
+        # The example feed might provide either the Spanish field names used by
+        # the downstream sheet or the original English ones (``name``,
+        # ``description``...).  We normalise here so the rest of the pipeline can
+        # rely on a consistent schema.
         yield {
-            "name": raw_entry.get("name", ""),
-            "description": raw_entry.get("description", ""),
-            "url": raw_entry.get("url", ""),
-            "stage": raw_entry.get("stage") or raw_entry.get("status"),
-            "source": source.name,
+            "id": raw_entry.get("id") or raw_entry.get("uuid") or "",
+            "nombre": raw_entry.get("nombre") or raw_entry.get("name", ""),
+            "sector": raw_entry.get("sector", ""),
+            "sub_sector": raw_entry.get("sub_sector") or raw_entry.get("subsector", ""),
+            "pais": raw_entry.get("pais") or raw_entry.get("country", ""),
+            "estado": raw_entry.get("estado") or raw_entry.get("stage") or raw_entry.get("status", ""),
+            "descripcion": raw_entry.get("descripcion") or raw_entry.get("description", ""),
+            "website": raw_entry.get("website") or raw_entry.get("url", ""),
+            "tags": raw_entry.get("tags") or raw_entry.get("labels", []),
+            "tecnologia_principal": raw_entry.get("tecnologia_principal")
+            or raw_entry.get("primary_technology", ""),
+            "eficiencia_hidrica": raw_entry.get("eficiencia_hidrica") or "",
+            "tecnologias_regenerativas": raw_entry.get("tecnologias_regenerativas")
+            or raw_entry.get("regenerative_tech", ""),
+            "impacto_medioambiental": raw_entry.get("impacto_medioambiental")
+            or raw_entry.get("environmental_impact", ""),
+            "impacto_social": raw_entry.get("impacto_social") or raw_entry.get("social_impact", ""),
+            "modelo_digital": raw_entry.get("modelo_digital") or raw_entry.get("digital_model", ""),
+            "indicador_sostenibilidad": raw_entry.get("indicador_sostenibilidad")
+            or raw_entry.get("sustainability_indicator", ""),
+            "fuente_datos": raw_entry.get("fuente_datos") or source.name,
         }
 
 
+OUTPUT_FIELDS = [
+    "id",
+    "nombre",
+    "sector",
+    "sub_sector",
+    "pais",
+    "estado",
+    "descripcion",
+    "website",
+    "tags",
+    "tecnologia_principal",
+    "eficiencia_hidrica",
+    "tecnologias_regenerativas",
+    "impacto_medioambiental",
+    "impacto_social",
+    "modelo_digital",
+    "indicador_sostenibilidad",
+    "fuente_datos",
+    "scraped_at",
+]
+
+
+def _coerce_tags(value: Any) -> List[str]:
+    """Convert the ``tags`` field into a normalised list of strings."""
+
+    if not value:
+        return []
+    if isinstance(value, str):
+        return [tag.strip() for tag in value.split(",") if tag.strip()]
+    if isinstance(value, (list, tuple, set)):
+        normalised: List[str] = []
+        for item in value:
+            if not item:
+                continue
+            normalised.append(str(item).strip())
+        return normalised
+    return [str(value).strip()]
+
+
 def normalise_deal(raw_deal: Dict[str, Any]) -> Dict[str, Any]:
-    """Normalise parsed data to a consistent schema.
+    """Normalise parsed data to the Vaireo dealflow schema."""
 
-    Normalisation ensures downstream consumers do not have to worry about
-    variations between sources. Add additional fields here if you need them for
-    analytics (e.g. geography, industry, founder data).
-    """
-
-    return {
-        "name": raw_deal.get("name", "").strip(),
-        "description": raw_deal.get("description", "").strip(),
-        "url": raw_deal.get("url", "").strip(),
-        "stage": raw_deal.get("stage") or "unknown",
-        "source": raw_deal.get("source", "unknown"),
+    normalised: Dict[str, Any] = {
+        "id": str(raw_deal.get("id", "")).strip(),
+        "nombre": raw_deal.get("nombre", "").strip(),
+        "sector": raw_deal.get("sector", "").strip(),
+        "sub_sector": raw_deal.get("sub_sector", "").strip(),
+        "pais": raw_deal.get("pais", "").strip(),
+        "estado": raw_deal.get("estado", "").strip(),
+        "descripcion": raw_deal.get("descripcion", "").strip(),
+        "website": raw_deal.get("website", "").strip(),
+        "tags": _coerce_tags(raw_deal.get("tags")),
+        "tecnologia_principal": raw_deal.get("tecnologia_principal", "").strip(),
+        "eficiencia_hidrica": raw_deal.get("eficiencia_hidrica", "").strip(),
+        "tecnologias_regenerativas": raw_deal.get("tecnologias_regenerativas", "").strip(),
+        "impacto_medioambiental": raw_deal.get("impacto_medioambiental", "").strip(),
+        "impacto_social": raw_deal.get("impacto_social", "").strip(),
+        "modelo_digital": raw_deal.get("modelo_digital", "").strip(),
+        "indicador_sostenibilidad": raw_deal.get("indicador_sostenibilidad", "").strip(),
+        "fuente_datos": raw_deal.get("fuente_datos", "unknown").strip() or "unknown",
         "scraped_at": int(time.time()),
     }
+
+    for field in OUTPUT_FIELDS:
+        if field not in normalised:
+            normalised[field] = ""
+
+    return normalised
 
 
 DEFAULT_SOURCES: Dict[str, SourceConfig] = {
@@ -142,10 +215,11 @@ DEFAULT_SOURCES: Dict[str, SourceConfig] = {
 def persist_to_json(deals: Iterable[Dict[str, Any]], output_path: pathlib.Path) -> None:
     """Write normalised deal data to a JSON file."""
 
+    records = list(deals)
     output_path.parent.mkdir(parents=True, exist_ok=True)
     with output_path.open("w", encoding="utf-8") as handle:
-        json.dump(list(deals), handle, indent=2, ensure_ascii=False)
-    LOGGER.info("Persisted %s deals to %s", output_path, output_path.resolve())
+        json.dump(records, handle, indent=2, ensure_ascii=False)
+    LOGGER.info("Persisted %s deals to %s", len(records), output_path.resolve())
 
 
 def run_workflow(
