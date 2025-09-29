@@ -13,6 +13,10 @@ A Python scraper for tracking startups dealflow.
 3. Install dependencies: `pip install -r requirements.txt`
 4. Run the scraper: `python scraper.py`
 
+If you plan to export the results to Google Sheets, create a Google Cloud
+service account with access to the destination spreadsheet, download its JSON
+credentials, and share the sheet with the service account email address.
+
 ## Usage
 
 The scraper exposes a command line interface for configuring which startup
@@ -47,6 +51,22 @@ python scraper.py --output data/dealflow.json --timeout 20
 Use `--output` to choose a different destination file and `--timeout` to tweak
 HTTP request behaviour.
 
+### Exporting directly to Google Sheets
+
+```bash
+python scraper.py \
+  --google-sheet-id 1c0dlguFV7zmsozEC9haJ0fWdtfRCCgTABIByZwqhQIg \
+  --worksheet-id 1115054056 \
+  --google-credentials credentials.json
+```
+
+The command above publishes the normalised records into the worksheet whose
+`gid` matches the provided value, mirroring the column order of the shared
+template. When `--google-credentials` is omitted the scraper falls back to the
+`GOOGLE_APPLICATION_CREDENTIALS` environment variable. Records are written with
+one header row followed by one row per startup; tags are joined as a comma
+separated string for readability within the sheet.
+
 ### Dry runs during development
 
 ```bash
@@ -56,6 +76,37 @@ python scraper.py --dry-run --log-level DEBUG
 Enable `--dry-run` to execute the workflow without writing results to disk. This
 is helpful when iterating on new parsers. Pair it with `--log-level DEBUG` to
 inspect parsing output and HTTP requests in real time.
+
+## Output schema
+
+Each record emitted by the scraper follows the Vaireo dealflow schema below.
+The field names are aligned with the spreadsheet you provided so that the JSON
+output can be ingested without additional mapping.
+
+| Campo                     | Descripción                                                                 |
+|---------------------------|-----------------------------------------------------------------------------|
+| `id`                      | Identificador único de la startup (si la fuente lo expone).                 |
+| `nombre`                  | Nombre de la startup.                                                       |
+| `sector`                  | Sector principal en el que opera.                                           |
+| `sub_sector`              | Subsector o categoría específica.                                           |
+| `pais`                    | País de origen.                                                             |
+| `estado`                  | Estado o etapa actual (por ejemplo, seed, growth).                          |
+| `descripcion`             | Resumen de la propuesta de valor.                                           |
+| `website`                 | URL oficial de la compañía.                                                 |
+| `tags`                    | Lista de etiquetas libres asociadas a la startup.                           |
+| `tecnologia_principal`    | Tecnología central que impulsa la solución.                                 |
+| `eficiencia_hidrica`      | Indicador relacionado con eficiencia en el uso de agua.                     |
+| `tecnologias_regenerativas` | Tecnologías regenerativas aplicadas.                                      |
+| `impacto_medioambiental`  | Resumen del impacto medioambiental positivo.                                |
+| `impacto_social`          | Descripción del impacto social.                                             |
+| `modelo_digital`          | Información sobre el modelo digital del negocio.                            |
+| `indicador_sostenibilidad`| Métrica o señal de sostenibilidad reportada por la fuente.                  |
+| `fuente_datos`            | Nombre de la fuente que aportó la información.                              |
+| `scraped_at`              | Marca temporal (epoch) del momento de recolección.                          |
+
+Los campos que no estén presentes en la fuente se normalizan como cadenas
+vacías (`""`), salvo `tags`, que siempre es una lista. Esto facilita integrar
+datos provenientes de fuentes heterogéneas.
 
 ## Extending the scraper
 
