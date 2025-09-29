@@ -5,8 +5,13 @@ A Python scraper for tracking startups dealflow.
 ## Getting Started
 
 1. Clone the repository
-2. Install dependencies: `pip install -r requirements.txt`
-3. Run the scraper: `python scraper.py`
+2. (Recommended) Create and activate a virtual environment:
+   ```bash
+   python -m venv .venv
+   source .venv/bin/activate
+   ```
+3. Install dependencies: `pip install -r requirements.txt`
+4. Run the scraper: `python scraper.py`
 
 ## Purpose
 
