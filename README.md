@@ -57,6 +57,37 @@ Enable `--dry-run` to execute the workflow without writing results to disk. This
 is helpful when iterating on new parsers. Pair it with `--log-level DEBUG` to
 inspect parsing output and HTTP requests in real time.
 
+## Output schema
+
+Each record emitted by the scraper follows the Vaireo dealflow schema below.
+The field names are aligned with the spreadsheet you provided so that the JSON
+output can be ingested without additional mapping.
+
+| Campo                     | Descripción                                                                 |
+|---------------------------|-----------------------------------------------------------------------------|
+| `id`                      | Identificador único de la startup (si la fuente lo expone).                 |
+| `nombre`                  | Nombre de la startup.                                                       |
+| `sector`                  | Sector principal en el que opera.                                           |
+| `sub_sector`              | Subsector o categoría específica.                                           |
+| `pais`                    | País de origen.                                                             |
+| `estado`                  | Estado o etapa actual (por ejemplo, seed, growth).                          |
+| `descripcion`             | Resumen de la propuesta de valor.                                           |
+| `website`                 | URL oficial de la compañía.                                                 |
+| `tags`                    | Lista de etiquetas libres asociadas a la startup.                           |
+| `tecnologia_principal`    | Tecnología central que impulsa la solución.                                 |
+| `eficiencia_hidrica`      | Indicador relacionado con eficiencia en el uso de agua.                     |
+| `tecnologias_regenerativas` | Tecnologías regenerativas aplicadas.                                      |
+| `impacto_medioambiental`  | Resumen del impacto medioambiental positivo.                                |
+| `impacto_social`          | Descripción del impacto social.                                             |
+| `modelo_digital`          | Información sobre el modelo digital del negocio.                            |
+| `indicador_sostenibilidad`| Métrica o señal de sostenibilidad reportada por la fuente.                  |
+| `fuente_datos`            | Nombre de la fuente que aportó la información.                              |
+| `scraped_at`              | Marca temporal (epoch) del momento de recolección.                          |
+
+Los campos que no estén presentes en la fuente se normalizan como cadenas
+vacías (`""`), salvo `tags`, que siempre es una lista. Esto facilita integrar
+datos provenientes de fuentes heterogéneas.
+
 ## Extending the scraper
 
 To add a new source:
