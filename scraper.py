@@ -167,27 +167,35 @@ def _coerce_tags(value: Any) -> List[str]:
     return [str(value).strip()]
 
 
+def _coerce_string(value: Any) -> str:
+    """Return a trimmed string if the input is truthy text, otherwise an empty string."""
+
+    if not value or not isinstance(value, str):
+        return ""
+    return value.strip()
+
+
 def normalise_deal(raw_deal: Dict[str, Any]) -> Dict[str, Any]:
     """Normalise parsed data to the Vaireo dealflow schema."""
 
     normalised: Dict[str, Any] = {
-        "id": str(raw_deal.get("id", "")).strip(),
-        "nombre": raw_deal.get("nombre", "").strip(),
-        "sector": raw_deal.get("sector", "").strip(),
-        "sub_sector": raw_deal.get("sub_sector", "").strip(),
-        "pais": raw_deal.get("pais", "").strip(),
-        "estado": raw_deal.get("estado", "").strip(),
-        "descripcion": raw_deal.get("descripcion", "").strip(),
-        "website": raw_deal.get("website", "").strip(),
+        "id": _coerce_string(raw_deal.get("id")),
+        "nombre": _coerce_string(raw_deal.get("nombre")),
+        "sector": _coerce_string(raw_deal.get("sector")),
+        "sub_sector": _coerce_string(raw_deal.get("sub_sector")),
+        "pais": _coerce_string(raw_deal.get("pais")),
+        "estado": _coerce_string(raw_deal.get("estado")),
+        "descripcion": _coerce_string(raw_deal.get("descripcion")),
+        "website": _coerce_string(raw_deal.get("website")),
         "tags": _coerce_tags(raw_deal.get("tags")),
-        "tecnologia_principal": raw_deal.get("tecnologia_principal", "").strip(),
-        "eficiencia_hidrica": raw_deal.get("eficiencia_hidrica", "").strip(),
-        "tecnologias_regenerativas": raw_deal.get("tecnologias_regenerativas", "").strip(),
-        "impacto_medioambiental": raw_deal.get("impacto_medioambiental", "").strip(),
-        "impacto_social": raw_deal.get("impacto_social", "").strip(),
-        "modelo_digital": raw_deal.get("modelo_digital", "").strip(),
-        "indicador_sostenibilidad": raw_deal.get("indicador_sostenibilidad", "").strip(),
-        "fuente_datos": raw_deal.get("fuente_datos", "unknown").strip() or "unknown",
+        "tecnologia_principal": _coerce_string(raw_deal.get("tecnologia_principal")),
+        "eficiencia_hidrica": _coerce_string(raw_deal.get("eficiencia_hidrica")),
+        "tecnologias_regenerativas": _coerce_string(raw_deal.get("tecnologias_regenerativas")),
+        "impacto_medioambiental": _coerce_string(raw_deal.get("impacto_medioambiental")),
+        "impacto_social": _coerce_string(raw_deal.get("impacto_social")),
+        "modelo_digital": _coerce_string(raw_deal.get("modelo_digital")),
+        "indicador_sostenibilidad": _coerce_string(raw_deal.get("indicador_sostenibilidad")),
+        "fuente_datos": _coerce_string(raw_deal.get("fuente_datos")) or "unknown",
         "scraped_at": int(time.time()),
     }
 
